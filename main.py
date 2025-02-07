@@ -1,9 +1,8 @@
-import difflib
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
-# ✅ Replace with your Telegram bot token
-TOKEN = "8065888962:AAFMgJZM4UGT2ukGOkG6UWmkkMSascxVpnc"
+# ✅ Replace with your bot token
+TOKEN = "YOUR_BOT_TOKEN"
 
 # ✅ College Information Database
 COLLEGE_DATA = {
@@ -11,9 +10,9 @@ COLLEGE_DATA = {
     "established": "2007",
     "location": "CarStreet, Mangalore, Karnataka",
     "principal": "Dr. Jayakara Bhandary",
-    "history/about college":"The college is located in Mangalore, Karnataka, India. It was established in 2007 and was initially based at the Government PU College building in Balmatta but relocated to the Government Primary School building in Carstreet in 2008. The college was renamed to the Dr. P. Dayananda Pai- P. Sathisha Pai Government First Grade College in October 2017 and was reopened by Basavaraj Rayareddy, Minister for Higher Education of the State of Karnataka.[2] The inauguration ceremony was attended by patrons Dayananda Pai and Sathisha Pai.",
-    "students_enrolled_2024": "1,200 students",
-    "courses_offered": [
+    "history": "The college was established in 2007. Initially based at Balmatta, it moved to CarStreet in 2008.",
+    "students_2024": "1,200 students",
+    "courses": [
         "B.A (Bachelor of Arts)",
         "B.Sc (Bachelor of Science)",
         "B.Com (Bachelor of Commerce)",
@@ -27,67 +26,70 @@ COLLEGE_DATA = {
     "contact": "+91-9876543210",
     "website": "https://gfgc.edu.in/",
     "facilities": "Library, Sports Complex, Computer Lab, Hostel, Auditorium",
-    "admission_process": "Admissions open in June. Apply online via the college website."
+    "admission": "Admissions open in June. Apply online via the website."
 }
 
-# ✅ Function to search for answers in predefined data
-def get_best_answer(user_query):
-    query_lower = user_query.lower()
-
-    # 🔍 Direct keyword-based search
-    if "establish" in query_lower or "founded" in query_lower:
-        return f"🏛 The college was established in {COLLEGE_DATA['established']}."
-    elif "location" in query_lower or "where" in query_lower:
-        return f"📍 Location: {COLLEGE_DATA['location']}"
-    elif "principal" in query_lower:
-        return f"🎓 The principal of the college is {COLLEGE_DATA['principal']}."
-    elif "students" in query_lower or "enrolled" in query_lower:
-        return f"👨‍🎓 In 2024, {COLLEGE_DATA['students_enrolled_2024']} enrolled."
-    elif "course" in query_lower or "program" in query_lower:
-        return "🎓 Courses Offered:\n" + "\n".join(f"• {course}" for course in COLLEGE_DATA["courses_offered"])
-    elif "contact" in query_lower or "phone" in query_lower:
-        return f"📞 Contact: {COLLEGE_DATA['contact']}\n🌐 Website: {COLLEGE_DATA['website']}"
-    elif "facilities" in query_lower or "infrastructure" in query_lower:
-        return f"🏫 Facilities Available: {COLLEGE_DATA['facilities']}"
-    elif "admission" in query_lower:
-        return f"📅 {COLLEGE_DATA['admission_process']}"
-
-    # 🔍 Fuzzy matching for unknown questions
-    best_match = difflib.get_close_matches(query_lower, COLLEGE_DATA.keys(), n=1, cutoff=0.5)
-    if best_match:
-        key = best_match[0]
-        return f"🔍 Here's what I found: {COLLEGE_DATA[key]}"
-
-    return "❌ Sorry, I couldn't find that information. Try asking something else."
-
-# ✅ Handle /start Command
+# ✅ Start Command
 async def start(update: Update, context: CallbackContext):
+    keyboard = [
+        [InlineKeyboardButton("📖 History", callback_data="history"),
+         InlineKeyboardButton("📍 Location", callback_data="location")],
+        [InlineKeyboardButton("🎓 Courses", callback_data="courses"),
+         InlineKeyboardButton("☎ Contact", callback_data="contact")],
+        [InlineKeyboardButton("🏫 Facilities", callback_data="facilities"),
+         InlineKeyboardButton("📝 Admission", callback_data="admission")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "👋 Welcome to GFGC College Bot!\n"
-        "You can ask about:\n"
-        "1️⃣ About College / History\n"
-        "2️⃣ Courses Offered\n"
-        "3️⃣ Contact Details\n"
-        "4️⃣ Location\n"
-        "5️⃣ Admissions & Fees\n"
-        "6️⃣ Principal & Staff\n"
-        "7️⃣ Student Enrollment\n"
-        "Type your question!"
+        "👋 Welcome to GFGC College Bot!\nTap a button below to get information:",
+        reply_markup=reply_markup
     )
 
-# ✅ Handle User Messages
+# ✅ Callback Handler for Buttons
+async def button_handler(update: Update, context: CallbackContext):
+    query = update.callback_query
+    await query.answer()
+
+    response = COLLEGE_DATA.get(query.data, "❌ Information not found.")
+    if isinstance(response, list):
+        response = "\n".join(f"• {item}" for item in response)
+
+    await query.message.reply_text(response)
+
+# ✅ Handle Text Messages
 async def handle_message(update: Update, context: CallbackContext):
-    user_text = update.message.text.lower()
-    response = get_best_answer(user_text)
+    text = update.message.text.lower()
+    response = None
+
+    if "establish" in text or "founded" in text:
+        response = f"🏛 The college was established in {COLLEGE_DATA['established']}."
+    elif "location" in text:
+        response = f"📍 {COLLEGE_DATA['location']}"
+    elif "principal" in text:
+        response = f"🎓 Principal: {COLLEGE_DATA['principal']}"
+    elif "students" in text:
+        response = f"👨‍🎓 {COLLEGE_DATA['students_2024']} enrolled."
+    elif "course" in text:
+        response = "🎓 Courses Offered:\n" + "\n".join(f"• {course}" for course in COLLEGE_DATA["courses"])
+    elif "contact" in text:
+        response = f"📞 Contact: {COLLEGE_DATA['contact']}\n🌐 Website: {COLLEGE_DATA['website']}"
+    elif "facilities" in text:
+        response = f"🏫 Facilities Available: {COLLEGE_DATA['facilities']}"
+    elif "admission" in text:
+        response = f"📅 {COLLEGE_DATA['admission']}"
+    else:
+        response = "❌ Sorry, I couldn't find that information. Try using a button."
+
     await update.message.reply_text(response)
 
-# ✅ Main Function to Start Bot
+# ✅ Main Function
 def main():
     app = Application.builder().token(TOKEN).build()
-
-    # Handlers
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.Regex("^(📖 History|📍 Location|🎓 Courses|☎ Contact|🏫 Facilities|📝 Admission)$"), handle_message))
+    app.add_handler(MessageHandler(filters.CallbackQuery(), button_handler))
 
     print("🤖 Bot is running... Press Ctrl+C to stop.")
     app.run_polling()
