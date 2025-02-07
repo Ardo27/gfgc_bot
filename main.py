@@ -1,8 +1,8 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, CallbackContext
 
 # ✅ Replace with your bot token
-TOKEN = "YOUR_BOT_TOKEN"
+TOKEN = "8065888962:AAFMgJZM4UGT2ukGOkG6UWmkkMSascxVpnc"
 
 # ✅ College Information Database
 COLLEGE_DATA = {
@@ -29,6 +29,7 @@ COLLEGE_DATA = {
     "admission": "Admissions open in June. Apply online via the website."
 }
 
+
 # ✅ Start Command
 async def start(update: Update, context: CallbackContext):
     keyboard = [
@@ -45,6 +46,7 @@ async def start(update: Update, context: CallbackContext):
         reply_markup=reply_markup
     )
 
+
 # ✅ Callback Handler for Buttons
 async def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -55,6 +57,7 @@ async def button_handler(update: Update, context: CallbackContext):
         response = "\n".join(f"• {item}" for item in response)
 
     await query.message.reply_text(response)
+
 
 # ✅ Handle Text Messages
 async def handle_message(update: Update, context: CallbackContext):
@@ -82,17 +85,18 @@ async def handle_message(update: Update, context: CallbackContext):
 
     await update.message.reply_text(response)
 
+
 # ✅ Main Function
 def main():
     app = Application.builder().token(TOKEN).build()
-    
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(MessageHandler(filters.Regex("^(📖 History|📍 Location|🎓 Courses|☎ Contact|🏫 Facilities|📝 Admission)$"), handle_message))
-    app.add_handler(MessageHandler(filters.CallbackQuery(), button_handler))
+    app.add_handler(CallbackQueryHandler(button_handler))  # ✅ FIXED: Handling button clicks
 
     print("🤖 Bot is running... Press Ctrl+C to stop.")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
