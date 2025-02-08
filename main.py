@@ -1,8 +1,28 @@
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, CallbackContext
+import json
+import os
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
 # ✅ Replace with your bot token
 TOKEN = "8065888962:AAFMgJZM4UGT2ukGOkG6UWmkkMSascxVpnc"
+
+# ✅ Replace with your GitHub Web App URL
+BOT_WEB_APP_URL = "https://ardo27.github.io/GFGC-web/"
+
+# ✅ JSON File to Store User Data
+USER_DATA_FILE = "users.json"
+
+# ✅ Function to Load User Data from JSON
+def load_user_data():
+    if os.path.exists(USER_DATA_FILE):
+        with open(USER_DATA_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    return {}
+
+# ✅ Function to Save User Data to JSON
+def save_user_data(data):
+    with open(USER_DATA_FILE, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4)
 
 # ✅ College Information Database
 COLLEGE_DATA = {
@@ -29,26 +49,38 @@ COLLEGE_DATA = {
     "admission": "Admissions open in June. Apply online via the website."
 }
 
+# ✅ Function to Save User Data
+def save_user(user_id, name):
+    users = load_user_data()
+    if str(user_id) not in users:  # ✅ Prevent duplicates
+        users[str(user_id)] = {"name": name}
+        save_user_data(users)
 
-# ✅ Start Command
-async def start(update: Update, context: CallbackContext):
+# ✅ Start Command with Web App Button
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    first_name = update.message.from_user.first_name  # ✅ Get the user's first name
+    save_user(user_id, first_name)  # ✅ Store user info in JSON file
+
     keyboard = [
         [InlineKeyboardButton("📖 History", callback_data="history"),
          InlineKeyboardButton("📍 Location", callback_data="location")],
         [InlineKeyboardButton("🎓 Courses", callback_data="courses"),
          InlineKeyboardButton("☎ Contact", callback_data="contact")],
         [InlineKeyboardButton("🏫 Facilities", callback_data="facilities"),
-         InlineKeyboardButton("📝 Admission", callback_data="admission")]
+         InlineKeyboardButton("📝 Admission", callback_data="admission")],
+        [InlineKeyboardButton("🌐 Open Web App", web_app=WebAppInfo(url=BOT_WEB_APP_URL))]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
     await update.message.reply_text(
-        "👋 Welcome to GFGC College Bot!\nTap a button below to get information:",
+        f"👋 Hello {first_name}! Welcome to GFGC College Bot.\n"
+        "Tap a button below to get information or open the web app:",
         reply_markup=reply_markup
     )
 
-
 # ✅ Callback Handler for Buttons
-async def button_handler(update: Update, context: CallbackContext):
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
@@ -58,9 +90,8 @@ async def button_handler(update: Update, context: CallbackContext):
 
     await query.message.reply_text(response)
 
-
 # ✅ Handle Text Messages
-async def handle_message(update: Update, context: CallbackContext):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
     response = None
 
@@ -85,18 +116,16 @@ async def handle_message(update: Update, context: CallbackContext):
 
     await update.message.reply_text(response)
 
-
 # ✅ Main Function
 def main():
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(CallbackQueryHandler(button_handler))  # ✅ FIXED: Handling button clicks
+    app.add_handler(CallbackQueryHandler(button_handler))  # ✅ Handles button clicks
 
     print("🤖 Bot is running... Press Ctrl+C to stop.")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
