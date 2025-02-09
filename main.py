@@ -3,7 +3,7 @@ import os
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = "8065888962:AAGDTZWsOkoRmbH44KAJ_1ragl5lP6rP5p8"
 
 # ✅ Replace with your GitHub Web App URL
 BOT_WEB_APP_URL = "https://ardo27.github.io/GFGC-web/"
